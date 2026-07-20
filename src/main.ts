@@ -3,8 +3,11 @@ import {
   type EvenAppBridge,
   TextContainerProperty,
   ImageContainerProperty,
+  ListContainerProperty,
+  ListItemContainerProperty,
   ImageRawDataUpdate,
   CreateStartUpPageContainer,
+  RebuildPageContainer,
   TextContainerUpgrade,
   OsEventTypeList,
 } from '@evenrealities/even_hub_sdk'
@@ -20,7 +23,12 @@ function setStatus(text: string) {
 
 // ---------------------------------------------------------------- tiles
 
-const manifest: Manifest = await (await fetch(`${import.meta.env.BASE_URL}cards.json`)).json()
+// cards.json must never be served stale: a cached manifest references
+// tile hashes that no longer exist after a redeploy (-> 404 -> blank).
+// Tiles themselves are content-hashed, so caching them is always safe.
+const manifest: Manifest = await (
+  await fetch(`${import.meta.env.BASE_URL}cards.json?v=${Date.now()}`, { cache: 'no-store' })
+).json()
 const tileCache = new Map<string, Uint8Array>()
 
 async function getTile(rel: string): Promise<Uint8Array> {
@@ -40,8 +48,6 @@ function prefetchCard(idx: number) {
 
 let previewGen = 0
 function showPhonePreview(idx: number) {
-  // The full card = 4 tiles; previewing tile 0's card via the preview/ copy
-  // isn't bundled, so stitch tiles on a canvas for the phone-side preview.
   const gen = ++previewGen
   void (async () => {
     const canvas = document.createElement('canvas')
@@ -78,7 +84,6 @@ let generation = 0
 let queue: Promise<void> = Promise.resolve()
 
 if (!bridge) {
-  // Plain-browser mode (no Even app): just preview cards, arrow keys flip.
   setStatus('No glasses bridge found — browser preview mode.')
   showPhonePreview(idx)
   window.addEventListener('keydown', e => {
@@ -94,7 +99,21 @@ if (!bridge) {
 async function startGlassesApp(bridge: EvenAppBridge) {
   setStatus('Connected — building page…')
 
-  // Restore last position.
+  // Section jump menu (opened with double-tap on a card).
+  const SECTIONS: { label: string; target: number | 'exit' }[] = [
+    { label: 'Start', target: 0 },
+    { label: '1-2 Dimensions & pivots', target: 1 },
+    { label: '3-4 Consistency & rank', target: 6 },
+    { label: '5-6 Homogeneous & IMT', target: 10 },
+    { label: '7 One-to-one & kernel', target: 16 },
+    { label: '8 Linearity', target: 20 },
+    { label: '9 Standard matrices', target: 22 },
+    { label: '10 Composition', target: 27 },
+    { label: 'Exam recipes', target: 29 },
+    { label: 'Exit app', target: 'exit' },
+  ]
+  let mode: 'cards' | 'menu' = 'cards'
+
   try {
     const saved = await bridge.getLocalStorage('cardIdx')
     const n = parseInt(saved ?? '', 10)
@@ -103,77 +122,92 @@ async function startGlassesApp(bridge: EvenAppBridge) {
     /* first run */
   }
 
-  // Full-screen text container behind the images captures all input
-  // (image containers cannot set isEventCapture).
-  const eventLayer = new TextContainerProperty({
-    xPosition: 0,
-    yPosition: 0,
-    width: 576,
-    height: 288,
-    borderWidth: 0,
-    borderColor: 0,
-    paddingLength: 0,
-    containerID: 1,
-    containerName: 'evt',
-    content: ' ',
-    isEventCapture: 1,
-  })
-
-  // 2x2 grid of 288x144 image containers = full 576x288 canvas.
   const tilePos = [
     [0, 0],
     [288, 0],
     [0, 144],
     [288, 144],
   ]
-  const imageObject = tilePos.map(
-    ([x, y], t) =>
-      new ImageContainerProperty({
-        xPosition: x,
-        yPosition: y,
-        width: 288,
-        height: 144,
-        containerID: 2 + t,
-        containerName: `tile${t}`,
-      }),
-  )
 
-  // Progress counter drawn OVER the images (ID 6 > image IDs, text has no
-  // background fill). Updating text is near-instant vs ~21KB per image tile,
-  // and keeping it out of the images lets identical tiles be skipped.
-  const counter = new TextContainerProperty({
-    xPosition: 496,
-    yPosition: 2,
-    width: 78,
-    height: 30,
-    borderWidth: 0,
-    borderColor: 0,
-    paddingLength: 0,
-    containerID: 6,
-    containerName: 'counter',
-    content: `${idx + 1}/${manifest.count}`,
-    isEventCapture: 0,
-  })
+  // Full-screen text container behind the images captures all input
+  // (image containers cannot set isEventCapture).
+  function cardContainers() {
+    const eventLayer = new TextContainerProperty({
+      xPosition: 0,
+      yPosition: 0,
+      width: 576,
+      height: 288,
+      borderWidth: 0,
+      borderColor: 0,
+      paddingLength: 0,
+      containerID: 1,
+      containerName: 'evt',
+      content: ' ',
+      isEventCapture: 1,
+    })
+    const counter = new TextContainerProperty({
+      xPosition: 496,
+      yPosition: 2,
+      width: 78,
+      height: 30,
+      borderWidth: 0,
+      borderColor: 0,
+      paddingLength: 0,
+      containerID: 6,
+      containerName: 'counter',
+      content: `${idx + 1}/${manifest.count}`,
+      isEventCapture: 0,
+    })
+    const imageObject = tilePos.map(
+      ([x, y], t) =>
+        new ImageContainerProperty({
+          xPosition: x,
+          yPosition: y,
+          width: 288,
+          height: 144,
+          containerID: 2 + t,
+          containerName: `tile${t}`,
+        }),
+    )
+    return { containerTotalNum: 6, textObject: [eventLayer, counter], imageObject }
+  }
+
+  function menuContainers() {
+    const list = new ListContainerProperty({
+      xPosition: 0,
+      yPosition: 0,
+      width: 576,
+      height: 288,
+      borderWidth: 0,
+      borderColor: 5,
+      borderRadius: 0,
+      paddingLength: 4,
+      containerID: 20,
+      containerName: 'menu',
+      isEventCapture: 1,
+      itemContainer: new ListItemContainerProperty({
+        itemCount: SECTIONS.length,
+        itemWidth: 560,
+        isItemSelectBorderEn: 1,
+        itemName: SECTIONS.map(s => s.label),
+      }),
+    })
+    return { containerTotalNum: 1, listObject: [list] }
+  }
 
   const created = await bridge.createStartUpPageContainer(
-    new CreateStartUpPageContainer({
-      containerTotalNum: 6,
-      textObject: [eventLayer, counter],
-      imageObject,
-    }),
+    new CreateStartUpPageContainer(cardContainers()),
   )
   if (created !== 0) {
     setStatus(`createStartUpPageContainer failed: ${created}`)
     return
   }
 
-  await showCard(idx)
-  setStatus(`On glasses — card ${idx + 1}/${manifest.count}. Phone can go in your pocket.`)
-
   // updateImageRawData must be serial: one in flight at a time. A newer
   // showCard() bumps `generation` so stale tile sends are skipped. Tiles
-  // whose URL already sits in a container are not re-sent — the wire cost
-  // is the decoded 4-bit bitmap (~21KB/tile), not the PNG.
+  // already on screen are not re-sent — the wire cost is the decoded
+  // 4-bit bitmap (~21KB/tile), not the PNG. Every queue link catches its
+  // own errors so one failed send can never poison the chain.
   const onScreen: (string | null)[] = [null, null, null, null]
   async function showCard(target: number, force = false) {
     const gen = ++generation
@@ -190,21 +224,26 @@ async function startGlassesApp(bridge: EvenAppBridge) {
       )
       .catch(() => {})
     queue = queue.then(async () => {
-      for (let t = 0; t < 4; t++) {
-        if (gen !== generation) return
-        const rel = manifest.cards[target][t]
-        if (!force && onScreen[t] === rel) continue
-        const bytes = await getTile(rel)
-        if (gen !== generation) return
-        const result = await bridge.updateImageRawData(
-          new ImageRawDataUpdate({
-            containerID: 2 + t,
-            containerName: `tile${t}`,
-            imageData: bytes,
-          }),
-        )
-        if (String(result) === 'success') onScreen[t] = rel
-        else console.error('updateImageRawData:', result)
+      try {
+        for (let t = 0; t < 4; t++) {
+          if (gen !== generation || mode !== 'cards') return
+          const rel = manifest.cards[target][t]
+          if (!force && onScreen[t] === rel) continue
+          const bytes = await getTile(rel)
+          if (gen !== generation || mode !== 'cards') return
+          const result = await bridge.updateImageRawData(
+            new ImageRawDataUpdate({
+              containerID: 2 + t,
+              containerName: `tile${t}`,
+              imageData: bytes,
+            }),
+          )
+          if (String(result) === 'success') onScreen[t] = rel
+          else console.error('updateImageRawData:', result)
+        }
+      } catch (err) {
+        console.error('tile send failed', err)
+        setStatus(`Tile send failed (card ${target + 1}): ${err instanceof Error ? err.message : err}`)
       }
     })
     await queue
@@ -212,6 +251,27 @@ async function startGlassesApp(bridge: EvenAppBridge) {
     prefetchCard(target - 1)
     setStatus(`On glasses — card ${target + 1}/${manifest.count}`)
   }
+
+  async function openMenu() {
+    mode = 'menu'
+    generation++ // abandon in-flight tile sends
+    await bridge.rebuildPageContainer(new RebuildPageContainer(menuContainers())).catch(err => {
+      console.error('menu rebuild failed', err)
+    })
+    setStatus('Menu open — click a section on the glasses.')
+  }
+
+  async function backToCards(target: number) {
+    mode = 'cards'
+    onScreen.fill(null) // containers were destroyed by the rebuild
+    await bridge.rebuildPageContainer(new RebuildPageContainer(cardContainers())).catch(err => {
+      console.error('card rebuild failed', err)
+    })
+    void showCard(target, true)
+  }
+
+  await showCard(idx)
+  setStatus(`On glasses — card ${idx + 1}/${manifest.count}. Phone can go in your pocket.`)
 
   const next = () => void showCard(idx + 1 < manifest.count ? idx + 1 : 0)
   const prev = () => void showCard(idx - 1 >= 0 ? idx - 1 : manifest.count - 1)
@@ -227,27 +287,48 @@ async function startGlassesApp(bridge: EvenAppBridge) {
   bridge.onEvenHubEvent(event => {
     // Protobuf omits zero-value fields, so CLICK_EVENT (0) can arrive as
     // an envelope whose eventType is undefined. Real hardware may route
-    // taps through sysEvent OR textEvent depending on the active container.
+    // events through sysEvent, textEvent or listEvent depending on the
+    // active container.
     const sysType = event.sysEvent?.eventType
     const textType = event.textEvent?.eventType
-
-    if (
+    const listType = event.listEvent?.eventType
+    const isClick = (t: number | undefined, envelope: unknown) =>
+      envelope != null && (t === OsEventTypeList.CLICK_EVENT || t === undefined)
+    const doubleTap =
       sysType === OsEventTypeList.DOUBLE_CLICK_EVENT ||
-      textType === OsEventTypeList.DOUBLE_CLICK_EVENT
-    ) {
-      // Root page: hand back to the host for the exit dialogue (required UX).
-      void bridge.shutDownPageContainer(1)
-      return
-    }
-
-    if (
+      textType === OsEventTypeList.DOUBLE_CLICK_EVENT ||
+      listType === OsEventTypeList.DOUBLE_CLICK_EVENT
+    const foreground =
       sysType === OsEventTypeList.FOREGROUND_ENTER_EVENT ||
       textType === OsEventTypeList.FOREGROUND_ENTER_EVENT
-    ) {
-      void showCard(idx, true) // full re-paint: containers may have been cleared
+
+    if (foreground) {
+      // Full re-paint: containers may have been cleared by the host.
+      if (mode === 'menu') void openMenu()
+      else void backToCards(idx)
       return
     }
 
+    if (mode === 'menu') {
+      if (doubleTap) {
+        void bridge.shutDownPageContainer(1)
+        return
+      }
+      if (event.listEvent && isClick(listType, event.listEvent)) {
+        const sel = event.listEvent.currentSelectItemIndex ?? 0
+        const section = SECTIONS[sel]
+        if (!section) return
+        if (section.target === 'exit') void bridge.shutDownPageContainer(1)
+        else void backToCards(section.target)
+      }
+      return
+    }
+
+    // cards mode
+    if (doubleTap) {
+      void openMenu()
+      return
+    }
     if (
       sysType === OsEventTypeList.SCROLL_BOTTOM_EVENT ||
       textType === OsEventTypeList.SCROLL_BOTTOM_EVENT
@@ -262,9 +343,6 @@ async function startGlassesApp(bridge: EvenAppBridge) {
       onScroll('top')
       return
     }
-
-    const isClick = (t: number | undefined, envelope: unknown) =>
-      envelope != null && (t === OsEventTypeList.CLICK_EVENT || t === undefined)
     if (isClick(sysType, event.sysEvent) || isClick(textType, event.textEvent)) {
       next()
     }

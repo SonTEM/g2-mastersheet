@@ -35,7 +35,7 @@ CARDS = [
             (r"LINEAR ALGEBRA", dict(size=22, x=0.5, ha="center", gap=0.10)),
             (r"MASTER SHEET  ·  CH. 1–3", dict(size=13, x=0.5, ha="center", color=MID)),
             (r"tap: next   ·   swipe up: back", dict(size=10.5, x=0.5, ha="center", color=DIM, gap=0.10)),
-            (r"double-tap: exit", dict(size=10.5, x=0.5, ha="center", color=DIM)),
+            (r"double-tap: section menu", dict(size=10.5, x=0.5, ha="center", color=DIM)),
         ],
     },
     {

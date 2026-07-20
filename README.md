@@ -22,7 +22,8 @@ glasses as pre-rendered math cards. Live at:
 | tap | next card |
 | swipe down | next card |
 | swipe up | previous card |
-| double-tap | exit dialog |
+| double-tap | section menu (scroll, click to jump; Exit lives here) |
+| double-tap in menu | exit dialog |
 
 Last card position is remembered between launches.
 
