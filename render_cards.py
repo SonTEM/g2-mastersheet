@@ -180,8 +180,8 @@ def render_card(idx: int, card: dict, total: int) -> str:
     if card["header"]:
         fig.text(0.035, 0.945, card["header"], fontsize=10.5, color=DIM,
                  ha="left", va="top", fontweight="bold")
-    fig.text(0.968, 0.945, f"{idx + 1}/{total}", fontsize=10.5, color=DIM,
-             ha="right", va="top")
+    # progress counter is NOT baked in: the app overlays it as a text
+    # container, so otherwise-identical tiles stay shareable across cards
 
     y = 0.80 if card["header"] else 0.72
     for text, opts in card["lines"]:
@@ -198,8 +198,12 @@ def render_card(idx: int, card: dict, total: int) -> str:
 
 
 def main():
+    import hashlib
+    import io
+
     total = len(CARDS)
     manifest = []
+    seen = {}
     for i, card in enumerate(CARDS):
         path = render_card(i, card, total)
         img = Image.open(path).convert("L")
@@ -207,12 +211,22 @@ def main():
             img = img.resize((W, H))
         img.save(path)  # keep grayscale preview
         tiles = []
-        for t, box in enumerate(TILE_BOXES):
+        for box in TILE_BOXES:
             tile = img.crop(box)
-            tile_name = f"c{i:02d}_{t}.png"
-            tile.save(os.path.join(OUT, tile_name))
-            tiles.append(f"tiles/{tile_name}")
+            buf = io.BytesIO()
+            tile.save(buf, format="PNG", optimize=True)
+            data = buf.getvalue()
+            digest = hashlib.sha1(data).hexdigest()[:12]
+            # identical tiles (e.g. all-black halves) share one file, so the
+            # app can skip re-sending a tile whose URL is already on screen
+            if digest not in seen:
+                name = f"t_{digest}.png"
+                with open(os.path.join(OUT, name), "wb") as f:
+                    f.write(data)
+                seen[digest] = name
+            tiles.append(f"tiles/{seen[digest]}")
         manifest.append(tiles)
+    print(f"{total * 4} tiles, {len(seen)} unique")
 
     with open(os.path.join(os.path.dirname(OUT), "cards.json"), "w") as f:
         json.dump({"count": total, "cards": manifest}, f, indent=1)

@@ -5,6 +5,7 @@ import {
   ImageContainerProperty,
   ImageRawDataUpdate,
   CreateStartUpPageContainer,
+  TextContainerUpgrade,
   OsEventTypeList,
 } from '@evenrealities/even_hub_sdk'
 
@@ -137,10 +138,27 @@ async function startGlassesApp(bridge: EvenAppBridge) {
       }),
   )
 
+  // Progress counter drawn OVER the images (ID 6 > image IDs, text has no
+  // background fill). Updating text is near-instant vs ~21KB per image tile,
+  // and keeping it out of the images lets identical tiles be skipped.
+  const counter = new TextContainerProperty({
+    xPosition: 496,
+    yPosition: 2,
+    width: 78,
+    height: 30,
+    borderWidth: 0,
+    borderColor: 0,
+    paddingLength: 0,
+    containerID: 6,
+    containerName: 'counter',
+    content: `${idx + 1}/${manifest.count}`,
+    isEventCapture: 0,
+  })
+
   const created = await bridge.createStartUpPageContainer(
     new CreateStartUpPageContainer({
-      containerTotalNum: 5,
-      textObject: [eventLayer],
+      containerTotalNum: 6,
+      textObject: [eventLayer, counter],
       imageObject,
     }),
   )
@@ -153,16 +171,30 @@ async function startGlassesApp(bridge: EvenAppBridge) {
   setStatus(`On glasses — card ${idx + 1}/${manifest.count}. Phone can go in your pocket.`)
 
   // updateImageRawData must be serial: one in flight at a time. A newer
-  // showCard() bumps `generation` so stale tile sends are skipped.
-  async function showCard(target: number) {
+  // showCard() bumps `generation` so stale tile sends are skipped. Tiles
+  // whose URL already sits in a container are not re-sent — the wire cost
+  // is the decoded 4-bit bitmap (~21KB/tile), not the PNG.
+  const onScreen: (string | null)[] = [null, null, null, null]
+  async function showCard(target: number, force = false) {
     const gen = ++generation
     idx = target
     showPhonePreview(target)
     void bridge.setLocalStorage('cardIdx', String(target)).catch(() => {})
+    void bridge
+      .textContainerUpgrade(
+        new TextContainerUpgrade({
+          containerID: 6,
+          containerName: 'counter',
+          content: `${target + 1}/${manifest.count}`,
+        }),
+      )
+      .catch(() => {})
     queue = queue.then(async () => {
       for (let t = 0; t < 4; t++) {
         if (gen !== generation) return
-        const bytes = await getTile(manifest.cards[target][t])
+        const rel = manifest.cards[target][t]
+        if (!force && onScreen[t] === rel) continue
+        const bytes = await getTile(rel)
         if (gen !== generation) return
         const result = await bridge.updateImageRawData(
           new ImageRawDataUpdate({
@@ -171,7 +203,8 @@ async function startGlassesApp(bridge: EvenAppBridge) {
             imageData: bytes,
           }),
         )
-        if (String(result) !== 'success') console.error('updateImageRawData:', result)
+        if (String(result) === 'success') onScreen[t] = rel
+        else console.error('updateImageRawData:', result)
       }
     })
     await queue
@@ -211,7 +244,7 @@ async function startGlassesApp(bridge: EvenAppBridge) {
       sysType === OsEventTypeList.FOREGROUND_ENTER_EVENT ||
       textType === OsEventTypeList.FOREGROUND_ENTER_EVENT
     ) {
-      void showCard(idx) // re-paint after returning from dashboard/background
+      void showCard(idx, true) // full re-paint: containers may have been cleared
       return
     }
 

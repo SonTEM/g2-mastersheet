@@ -2,7 +2,7 @@
   "package_id": "com.davidlee.mastersheet",
   "edition": "202601",
   "name": "LinAlg Master Sheet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_app_version": "2.0.0",
   "min_sdk_version": "0.0.10",
   "tagline": "Linear algebra master sheet on your G2",
