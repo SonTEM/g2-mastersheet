@@ -28,7 +28,7 @@ Last card position is remembered between launches.
 
 ## How it works
 
-- `render_cards.py` renders 15 cards (576×288, white on black, matplotlib
+- `render_cards.py` renders 39 cards (576×288, white on black, matplotlib
   mathtext for ℝⁿ/⊆/matrices) and splits each into four 288×144 PNG tiles —
   the G2's max image-container size. A 2×2 tile grid covers the full canvas.
 - `src/main.ts` is an Even Hub plugin: an invisible full-screen text container

@@ -9,6 +9,7 @@ import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from PIL import Image
 
 W, H = 576, 288
@@ -168,9 +169,264 @@ CARDS = [
             (r"square A only!", dict(size=12.5, color=DIM, gap=0.06)),
         ],
     },
+    {
+        "header": "6. IMT — HOW TO USE IT",
+        "lines": [
+            (r"translate ANY statement into 'n pivots'", dict(size=15)),
+            (r"non-eigenvalue argument:", dict(size=13, color=MID, gap=0.07)),
+            (r"$Av = 3v$, $v \neq 0$ $\Rightarrow$ $(A-3I)v = 0$", dict(size=14.5, x=0.14)),
+            (r"$\Rightarrow$ $A - 3I$ is NOT invertible", dict(size=14.5, x=0.14)),
+        ],
+    },
+    {
+        "header": "7. ONE-TO-ONE",
+        "lines": [
+            (r"different inputs → different outputs", dict(size=15)),
+            (r"$T(x_1) = T(x_2)$ $\Rightarrow$ $x_1 = x_2$", dict(size=15, x=0.14)),
+            (r"$\mathrm{Nul}(A) = \{0\}$;  pivot in EVERY column", dict(size=14, gap=0.05)),
+            (r"columns independent", dict(size=14, x=0.14)),
+            (r"at most one solution for each b", dict(size=13, color=MID, gap=0.04)),
+        ],
+    },
+    {
+        "header": "7. ONTO",
+        "lines": [
+            (r"every codomain vector is reached", dict(size=15)),
+            (r"$\forall\, b \in \mathbb{R}^m$ some x has $Ax = b$", dict(size=15, x=0.14)),
+            (r"$\mathrm{Col}(A) = \mathbb{R}^m$;  pivot in EVERY row", dict(size=14, gap=0.05)),
+            (r"columns span the codomain", dict(size=14, x=0.14)),
+            (r"at least one solution for each b", dict(size=13, color=MID, gap=0.04)),
+        ],
+    },
+    {
+        "header": "7. ONE-TO-ONE vs ONTO",
+        "lines": [
+            (r"can be one-to-one but NOT onto,", dict(size=14.5)),
+            (r"or onto but NOT one-to-one", dict(size=14.5, x=0.14)),
+            (r"SQUARE matrix:", dict(size=14.5, gap=0.07)),
+            (r"one-to-one ⇔ onto ⇔ invertible", dict(size=15.5, x=0.14)),
+        ],
+    },
+    {
+        "header": "7. DIRECT KERNEL TEST",
+        "lines": [
+            (r"to test one-to-one: solve $T(x) = 0$", dict(size=15)),
+            (r"only the zero input ⇒ one-to-one", dict(size=14.5, x=0.14)),
+            (r"Ex: $T(x,y,z) = (x,\; x{+}z,\; 3x{-}4y{+}z,\; x)$", dict(size=13.5, gap=0.07)),
+            (r"$T=0$ gives $x=0$, $z=0$, $y=0$", dict(size=13.5, x=0.14)),
+            (r"⇒ T is one-to-one", dict(size=13.5, x=0.14)),
+        ],
+    },
+    {
+        "header": "8. LINEAR TRANSFORMATIONS",
+        "lines": [
+            (r"$T(u + v) = T(u) + T(v)$", dict(size=16)),
+            (r"$T(cu) = c\,T(u)$", dict(size=16)),
+            (r"$T(c_1 u + c_2 v) = c_1 T(u) + c_2 T(v)$", dict(size=14.5, gap=0.05)),
+            (r"every matrix transf. $T(x) = Ax$ is linear", dict(size=13, color=MID, gap=0.05)),
+        ],
+    },
+    {
+        "header": "8. LINEARITY — QUICK FAILURE TEST",
+        "lines": [
+            (r"if $T(0) \neq 0$:  NOT linear", dict(size=16)),
+            (r"(passing this alone proves nothing!)", dict(size=13, color=MID, x=0.14)),
+            (r"nonlinear signs: added constants,", dict(size=14.5, gap=0.07)),
+            (r"powers ($x^2$), products ($xy$), sin, ln, …", dict(size=14.5, x=0.14)),
+        ],
+    },
+    {
+        "header": "9. STANDARD MATRIX",
+        "lines": [
+            (r"$A = [\;T(e_1)\;\;\; T(e_2)\;\; \cdots \;\; T(e_n)\;]$", dict(size=16)),
+            (r"for $T:\mathbb{R}^n \to \mathbb{R}^m$:  A is m×n", dict(size=14.5, gap=0.06)),
+            (r"coefficients of each input variable", dict(size=14, gap=0.05)),
+            (r"form the corresponding column", dict(size=14, x=0.14)),
+        ],
+    },
+    {
+        "header": "9. STD MATRICES — REFLECTIONS (ℝ²)",
+        "lines": [],
+        "matrices": [
+            {"x": 0.30, "y": 0.55, "rows": [["1", "0"], ["0", "-1"]], "label": "across x-axis:  (x,−y)"},
+            {"x": 0.75, "y": 0.55, "rows": [["-1", "0"], ["0", "1"]], "label": "across y-axis:  (−x,y)"},
+            {"x": 0.30, "y": 0.17, "rows": [["0", "1"], ["1", "0"]], "label": "across y=x:  (y,x)"},
+            {"x": 0.75, "y": 0.17, "rows": [["0", "-1"], ["-1", "0"]], "label": "across y=−x:  (−y,−x)"},
+        ],
+    },
+    {
+        "header": "9. STD MATRICES — IDENTITY & PROJECTIONS (ℝ²)",
+        "lines": [],
+        "matrices": [
+            {"x": 0.18, "y": 0.38, "rows": [["1", "0"], ["0", "1"]], "label": "identity"},
+            {"x": 0.50, "y": 0.38, "rows": [["1", "0"], ["0", "0"]], "label": "onto x-axis: (x,0)"},
+            {"x": 0.82, "y": 0.38, "rows": [["0", "0"], ["0", "1"]], "label": "onto y-axis: (0,y)"},
+        ],
+    },
+    {
+        "header": "9. STD MATRICES — ROTATIONS (CCW)",
+        "lines": [],
+        "matrices": [
+            {"x": 0.30, "y": 0.38, "colw": 0.115,
+             "rows": [[r"\cos\theta", r"-\sin\theta"], [r"\sin\theta", r"\cos\theta"]],
+             "label": "rotate by θ"},
+            {"x": 0.78, "y": 0.38, "rows": [["0", "-1"], ["1", "0"]], "label": "rotate 90°:  (−y,x)"},
+        ],
+    },
+    {
+        "header": "9. PROJECTIONS FROM ℝ³",
+        "lines": [],
+        "matrices": [
+            {"x": 0.28, "y": 0.33, "rows": [["1", "0", "0"], ["0", "1", "0"], ["0", "0", "0"]],
+             "label": "to xy-plane, stay in ℝ³"},
+            {"x": 0.76, "y": 0.38, "rows": [["1", "0", "0"], ["0", "1", "0"]],
+             "label": "forget z, land in ℝ²"},
+        ],
+    },
+    {
+        "header": "10. COMPOSITION",
+        "lines": [
+            (r"$(T \circ U)(x) = T(U(x))$", dict(size=16)),
+            (r"apply U FIRST, then T (read right → left)", dict(size=14, x=0.14)),
+            (r"$[T \circ U] = AB$,    $[U \circ T] = BA$", dict(size=15, gap=0.06)),
+            (r"sizes: (m×n)(n×p) ⇒ m×p", dict(size=14.5, gap=0.06)),
+            (r"inner must match; outer = answer size", dict(size=13, color=MID, x=0.14)),
+        ],
+    },
+    {
+        "header": "10. WORKED COMPOSITION",
+        "lines": [
+            (r"$T(x,y) = (x{+}2y,\; 2x{+}y,\; x{-}y)$,   $U(x,y,z) = (-y,\, x)$", dict(size=13)),
+        ],
+        "matrices": [
+            {"x": 0.15, "y": 0.28, "rows": [["1", "2"], ["2", "1"], ["1", "-1"]], "label": "T:  A"},
+            {"x": 0.48, "y": 0.33, "rows": [["0", "-1", "0"], ["1", "0", "0"]], "label": "U:  B"},
+            {"x": 0.82, "y": 0.33, "rows": [["-2", "-1"], ["1", "2"]], "label": "[U∘T] = BA"},
+        ],
+    },
+    {
+        "header": "RECIPE — IS Ax=b CONSISTENT?",
+        "lines": [
+            (r"1. row-reduce $[\,A \;|\; b\,]$", dict(size=15)),
+            (r"2. look for row $[\,0 \;\cdots\; 0 \;|\; c\,]$, $c \neq 0$", dict(size=15)),
+            (r"3. no contradiction row ⇒ consistent", dict(size=15)),
+        ],
+    },
+    {
+        "header": "RECIPE — POINT / LINE / PLANE",
+        "lines": [
+            (r"1. confirm the system is consistent", dict(size=15)),
+            (r"2. count free variables:", dict(size=15)),
+            (r"0 → point,  1 → line,  2 → plane", dict(size=15, x=0.14)),
+            (r"3 → 3-space", dict(size=15, x=0.14)),
+            (r"solutions live in $\mathbb{R}^n$, n = # variables", dict(size=13, color=MID, gap=0.04)),
+        ],
+    },
+    {
+        "header": "RECIPE — BASIS FOR Col(A)",
+        "lines": [
+            (r"1. row-reduce A, note pivot COLUMN", dict(size=15)),
+            (r"positions", dict(size=15, x=0.14)),
+            (r"2. go back to the ORIGINAL A", dict(size=15)),
+            (r"3. take original columns at those spots", dict(size=15)),
+            (r"never use RREF columns for Col(A)!", dict(size=13, color=MID, gap=0.04)),
+        ],
+    },
+    {
+        "header": "RECIPE — BASIS FOR Nul(A)",
+        "lines": [
+            (r"1. solve $Ax = 0$ in RREF", dict(size=15)),
+            (r"2. assign parameters to free variables", dict(size=15)),
+            (r"3. write x = combination of parameter", dict(size=15)),
+            (r"vectors — those vectors = the basis", dict(size=15, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — IS THIS A BASIS FOR W?",
+        "lines": [
+            (r"1. every proposed vector belongs to W", dict(size=15)),
+            (r"2. vectors are linearly independent", dict(size=15)),
+            (r"3. count = dim(W),", dict(size=15)),
+            (r"or directly verify they span W", dict(size=15, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — SUBSPACE TEST",
+        "lines": [
+            (r"1. check 0 belongs", dict(size=15)),
+            (r"2. closed under addition", dict(size=15)),
+            (r"3. closed under scalar multiplication", dict(size=15)),
+            (r"shortcut: any Span{…} or Nul(A)", dict(size=13.5, color=MID, gap=0.05)),
+            (r"is automatically a subspace", dict(size=13.5, color=MID, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — VECTOR OUTSIDE THE RANGE",
+        "lines": [
+            (r"1. write the general output $Ax$", dict(size=14.5)),
+            (r"2. find a relation all outputs satisfy", dict(size=14.5)),
+            (r"3. pick a codomain vector violating it", dict(size=14.5)),
+            (r"Ex: outputs $(s{-}t,\; 2t,\; 3t)$: need $3b = 2c$", dict(size=13, gap=0.05)),
+            (r"$(0,1,0)$ violates ⇒ outside the range", dict(size=13, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — TEST 1-TO-1 / TEST ONTO",
+        "lines": [
+            (r"one-to-one:  solve $Ax=0$ or $T(x)=0$", dict(size=14.5)),
+            (r"only zero solution / pivot every column", dict(size=14, x=0.14)),
+            (r"onto:  pivot in every row", dict(size=14.5, gap=0.06)),
+            (r"rank = m / $\mathrm{Col}(A)=\mathbb{R}^m$ /", dict(size=14, x=0.14)),
+            (r"$Ax=b$ consistent for every b", dict(size=14, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — STD MATRIX & COMPOSING",
+        "lines": [
+            (r"std matrix:  compute $T(e_1),\ldots,T(e_n)$", dict(size=14.5)),
+            (r"place outputs as columns; size is m×n", dict(size=14, x=0.14)),
+            (r"compose:  check domains/codomains,", dict(size=14.5, gap=0.06)),
+            (r"rightmost transformation acts first,", dict(size=14, x=0.14)),
+            (r"$[T \circ U] = AB$", dict(size=14, x=0.14)),
+        ],
+    },
+    {
+        "header": "RECIPE — ∞ SOLUTIONS (PARAMETERS)",
+        "lines": [
+            (r"1. row-reduce symbolically", dict(size=15)),
+            (r"2. require NO contradiction in", dict(size=15)),
+            (r"the augmented column", dict(size=15, x=0.14)),
+            (r"3. require ≥ 1 free variable", dict(size=15)),
+            (r"row $[\,0 \cdots 0\; \alpha \;|\; \beta\,]$ ⇒ need $\alpha=0$ AND $\beta=0$", dict(size=13.5, gap=0.05)),
+        ],
+    },
 ]
 
 TILE_BOXES = [(0, 0, 288, 144), (288, 0, 576, 144), (0, 144, 288, 288), (288, 144, 576, 288)]
+
+
+def draw_matrix(fig, m):
+    """Draw a bracketed matrix centred at (m['x'], m['y']) in figure coords."""
+    rows = m["rows"]
+    nr, nc = len(rows), len(rows[0])
+    size = m.get("size", 13)
+    colw = m.get("colw", 0.055)
+    rowh = size * (100 / 72) * 1.6 / H
+    w, h = nc * colw, nr * rowh
+    x0, ytop = m["x"] - w / 2, m["y"] + h / 2
+    for i, row in enumerate(rows):
+        for j, entry in enumerate(row):
+            fig.text(x0 + colw * (j + 0.5), ytop - rowh * (i + 0.5), f"${entry}$",
+                     fontsize=size, color=FG, ha="center", va="center")
+    tick, pad = 0.014, 0.006
+    for bx, dirn in ((x0 - pad, 1), (x0 + w + pad, -1)):
+        fig.add_artist(Line2D(
+            [bx + dirn * tick, bx, bx, bx + dirn * tick],
+            [ytop + 0.012, ytop + 0.012, ytop - h - 0.012, ytop - h - 0.012],
+            transform=fig.transFigure, color=FG, linewidth=1.3))
+    if m.get("label"):
+        fig.text(m["x"], ytop + m.get("labeldy", 0.055), m["label"],
+                 fontsize=11.5, color=MID, ha="center", va="bottom")
 
 
 def render_card(idx: int, card: dict, total: int) -> str:
@@ -190,6 +446,9 @@ def render_card(idx: int, card: dict, total: int) -> str:
         fig.text(opts.get("x", 0.055), y, text, fontsize=size,
                  color=opts.get("color", FG), ha=opts.get("ha", "left"), va="top")
         y -= (size * (DPI / 72) * 1.55) / H  # pt -> px -> fig fraction, 1.55 leading
+
+    for m in card.get("matrices", []):
+        draw_matrix(fig, m)
 
     path = os.path.join(PREVIEW, f"card{idx:02d}.png")
     fig.savefig(path, dpi=DPI, facecolor="black")
